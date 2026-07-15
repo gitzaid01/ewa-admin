@@ -8,6 +8,7 @@ import Register from "./pages/auth/Register";
 import Dashboard from "./pages/Dashboard";
 import ProductList from "./pages/products/ProductList";
 import AddProduct from "./pages/products/AddProduct";
+import EditProduct from "./pages/products/EditProduct";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/products" element={<ProductList />} />
             <Route path="/products/add" element={<AddProduct />} />
+            <Route path="/products/edit/:id" element={<EditProduct />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/login" replace />} />
