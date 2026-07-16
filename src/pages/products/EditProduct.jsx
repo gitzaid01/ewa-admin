@@ -30,7 +30,9 @@ const EditProduct = () => {
           name: p.name || "",
           category: p.category || "",
           description: p.description || "",
-          image: p.image || "",
+          // image is stored as an array in the DB — join into a
+          // comma-separated string for the form input
+          image: Array.isArray(p.image) ? p.image.join(", ") : p.image || "",
           specifications: (p.specifications || []).join(", "),
           applications: (p.applications || []).join(", "),
           isFeatured: !!p.isFeatured,
@@ -51,27 +53,43 @@ const EditProduct = () => {
     if (errors[name]) setErrors({ ...errors, [name]: "" });
   };
 
+  // Splits a comma-separated string into a clean array of URLs
+  const parseImageList = (value) =>
+    String(value || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
   const validate = () => {
     const next = {};
-    if (!form.name.trim()) next.name = "Product name is required.";
-    else if (form.name.trim().length < 3)
+    const name = String(form.name || "");
+    const category = String(form.category || "");
+    const description = String(form.description || "");
+    const specifications = String(form.specifications || "");
+    const applications = String(form.applications || "");
+    const imageList = parseImageList(form.image);
+
+    if (!name.trim()) next.name = "Product name is required.";
+    else if (name.trim().length < 3)
       next.name = "Name must be at least 3 characters.";
 
-    if (!form.category.trim()) next.category = "Category is required.";
+    if (!category.trim()) next.category = "Category is required.";
 
-    if (!form.description.trim())
+    if (!description.trim())
       next.description = "Description is required.";
-    else if (form.description.trim().length < 10)
+    else if (description.trim().length < 10)
       next.description = "Description must be at least 10 characters.";
 
-    if (!form.image.trim()) next.image = "Image URL is required.";
-    else if (!/^https?:\/\/.+/.test(form.image.trim()))
-      next.image = "Enter a valid URL starting with http:// or https://";
+    if (imageList.length === 0)
+      next.image = "Add at least one image URL.";
+    else if (!imageList.every((url) => /^https?:\/\/.+/.test(url)))
+      next.image =
+        "Each image must be a valid URL starting with http:// or https://";
 
-    if (!form.specifications.trim())
+    if (!specifications.trim())
       next.specifications = "Add at least one specification.";
 
-    if (!form.applications.trim())
+    if (!applications.trim())
       next.applications = "Add at least one application.";
 
     setErrors(next);
@@ -87,11 +105,12 @@ const EditProduct = () => {
     try {
       const payload = {
         ...form,
-        specifications: form.specifications
+        image: parseImageList(form.image),
+        specifications: String(form.specifications || "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-        applications: form.applications
+        applications: String(form.applications || "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
@@ -111,6 +130,8 @@ const EditProduct = () => {
         ? "border-red-300 focus:ring-red-200 focus:border-red-400"
         : "border-gray-300 focus:ring-indigo-200 focus:border-indigo-400"
     }`;
+
+  const imagePreviewList = parseImageList(form.image);
 
   if (loading) {
     return (
@@ -217,26 +238,35 @@ const EditProduct = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Image URL <span className="text-red-500">*</span>
+                Image URLs <span className="text-red-500">*</span>
               </label>
               <input
                 name="image"
-                placeholder="https://example.com/image.jpg"
+                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
                 value={form.image}
                 onChange={handleChange}
                 className={inputClass("image")}
               />
-              {errors.image && (
+              {errors.image ? (
                 <p className="text-red-500 text-xs mt-1">{errors.image}</p>
+              ) : (
+                <p className="text-gray-400 text-xs mt-1">
+                  Separate multiple image URLs with commas.
+                </p>
               )}
-              {form.image && !errors.image && (
-                <img
-                  src={form.image}
-                  alt="Preview"
-                  onError={(e) => (e.target.style.display = "none")}
-                  onLoad={(e) => (e.target.style.display = "block")}
-                  className="w-16 h-16 rounded-lg object-cover border border-gray-200 mt-2"
-                />
+              {imagePreviewList.length > 0 && !errors.image && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {imagePreviewList.map((url, idx) => (
+                    <img
+                      key={idx}
+                      src={url}
+                      alt={`Preview ${idx + 1}`}
+                      onError={(e) => (e.target.style.display = "none")}
+                      onLoad={(e) => (e.target.style.display = "block")}
+                      className="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                    />
+                  ))}
+                </div>
               )}
             </div>
 
